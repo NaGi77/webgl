@@ -9,9 +9,9 @@ var VSHADER_SOURCE =
 //片元着色器
 var FSHADER_SOURCE = 
 'precision mediump float;\n'+
-''
+'uniform vec4 u_FragColor;\n'+
 'void main() {\n'+
-'gl_FragColor = vec4(1.0,0.0,1.0,1.0);\n'+//点的颜色
+'gl_FragColor = u_FragColor;\n'+//点的颜色
 '}\n';
 
 function main(){
@@ -37,9 +37,12 @@ function main(){
 		return;
 	};
 
+	//获取u_FragColor变量的存储位置
+	var u_FragColor = gl.getUniformLocation(gl.program,'u_FragColor');
+
 	//注册鼠标点击事件的响应函数
 	canvas.onmousedown = function(ev){
-		click(ev,gl,canvas,a_Position);
+		click(ev,gl,canvas,a_Position,u_FragColor);
 	};
 
 	//将顶点位置传输给attribu变量
@@ -51,24 +54,39 @@ function main(){
 	//清空canvas
 	gl.clear(gl.COLOR_BUFFER_BIT);
 }
+
  var g_points =[];//鼠标点击位置数组
- function click(ev,gl,canvas,a_Position){
+ var g_colors =[];//储存点颜色的数组
+
+ function click(ev,gl,canvas,a_Position,u_FragColor){
 	var x = ev.clientX;
 	var y = ev.clientY;
 	var rect = ev.target.getBoundingClientRect(); 	
 	x = ((x-rect.left)-canvas.height/2)/(canvas.height/2);
 	y = (canvas.width/2 - (y-rect.top))/(canvas.width/2);
 	//将坐标存到g_points中
-	g_points.push(x);
-	g_points.push(y);
+	g_points.push([x,y]);
+
+	//将点的颜色存储到g_colors中
+	if (x>=0.0&&y>=0.0) {
+		g_colors.push([1.0,0.0,0.0,1.0]);
+	}else if(x<0.0&&y<0.0){
+		g_colors.push([0.0,1.0,0.0,1.0]);
+	}else{
+		g_colors.push([1.0,1.0,1.0,1.0]);
+	}
 
 	//清除canvas
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
-	var len=g_points.length;
-	for (var i = 0; i < len; i+=2) {
-		gl.vertexAttrib3f(a_Position,g_points[i],g_points[i+1],0.0);
 
+	var len=g_points.length;
+
+	for (var i = 0; i < len; i++) {
+		var rgba=g_colors[i];
+		var xy=g_points[i];
+		gl.vertexAttrib3f(a_Position,xy[0],xy[1],0.0);
+		gl.uniform4f(u_FragColor,rgba[0],rgba[1],rgba[2],rgba[3]);
 		//绘制点
 		gl.drawArrays(gl.POINTS,0,1);
 	};
